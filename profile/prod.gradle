@@ -1,0 +1,3 @@
+//project.ext.filter = [
+//        'datasource-db': 'jdbc:mysql://localhost:3306/test?serverTimezone=Asia/Seoul&useSSL=false&allowPublicKeyRetrieval=true'
+//]
