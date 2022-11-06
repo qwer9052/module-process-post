@@ -1,9 +1,11 @@
 package com.module.process.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.module.db.post.entity.TbComment;
 import com.module.db.post.entity.TbPost;
 import com.module.db.user.entity.TbUser;
 import com.module.db.post.model.TbPostDto;
+import com.module.domain.post.repo.CommentRepo;
 import com.module.domain.post.repo.PostRepo;
 import com.module.domain.user.repo.UserRepo;
 import org.modelmapper.ModelMapper;
@@ -11,6 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -22,6 +26,9 @@ public class PostService {
     PostRepo postRepo;
 
     @Autowired
+    CommentRepo commentRepo;
+
+    @Autowired
     UserRepo userRepo;
 
     @Autowired
@@ -29,6 +36,9 @@ public class PostService {
 
     @Autowired
     ModelMapper modelMapper;
+
+    @PersistenceContext
+    private EntityManager em;
 
     public TbPostDto of(TbPost tbPost) {
         return modelMapper.map(tbPost, TbPostDto.class);
@@ -57,5 +67,24 @@ public class PostService {
         TbPost post = postRepo.findPost(postId);
         TbPostDto postDtos = this.of(post);
         return postDtos;
+    }
+
+    public Long insertPostComment(Long userId, Long postId, Long commentId, String content) {
+
+        TbUser tbUser = userRepo.findById(userId);
+        TbPost post = postRepo.findPost(postId);
+        TbComment tbComment = TbComment.TbCommentBuilder()
+                .tbPost(post)
+                .tbUser(tbUser)
+                .content(content).build();
+
+        TbComment comment = commentRepo.insertPostComment(tbComment);
+
+        if(commentId != null){
+            TbComment tbCommentParent = commentRepo.findById(commentId);
+            comment.updateParent(tbCommentParent);
+        }
+
+        return tbComment.getTbPost().getPostId();
     }
 }

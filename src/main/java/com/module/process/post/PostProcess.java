@@ -5,6 +5,7 @@ import com.module.db.post.model.TbPostDto;
 import com.module.domain.post.rest.PostRest;
 import com.module.process.service.PostService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -37,6 +38,12 @@ public class PostProcess implements PostRest {
     public Long insertPost(@RequestBody TbPostDto tbPostDto, Long userId) {
         Long postId = postService.insertPost(tbPostDto, userId);
         return postId;
+    }
+
+    @Override
+    @JwtAuth
+    public Long insertPostComment(Long userId, Long postId, Long commentId, @RequestBody TbPostDto tbPostDto) {
+        return postService.insertPostComment(userId, postId, commentId, tbPostDto.getContent());
     }
 
 

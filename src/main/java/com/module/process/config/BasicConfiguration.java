@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Configuration;
         basePackages = {
                 "com.module.core",
                 "com.module.domain",
+                "com.module.db.config",
         }
 )
 public class BasicConfiguration {
