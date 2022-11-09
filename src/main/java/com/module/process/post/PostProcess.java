@@ -1,6 +1,7 @@
 package com.module.process.post;
 
 import com.module.core.annotation.JwtAuth;
+import com.module.db.post.model.TbCommentDto;
 import com.module.db.post.model.TbPostDto;
 import com.module.domain.post.rest.PostRest;
 import com.module.process.service.PostService;
@@ -28,9 +29,16 @@ public class PostProcess implements PostRest {
 
     @Override
     @JwtAuth
-    public TbPostDto findPost(Long userId, Long postId) {
-        TbPostDto postDto = postService.findPost(userId, postId);
+    public TbPostDto findOnePostById(Long userId, Long postId) {
+        TbPostDto postDto = postService.findOnePostById(userId, postId);
         return postDto;
+    }
+
+    @Override
+    @JwtAuth
+    public TbCommentDto findOneCommentById(Long userId, Long commentId) {
+        TbCommentDto tbCommentDto = postService.findOneCommentById(userId, commentId);
+        return tbCommentDto;
     }
 
     @Override
@@ -44,6 +52,26 @@ public class PostProcess implements PostRest {
     @JwtAuth
     public Long insertPostComment(Long userId, Long postId, Long commentId, @RequestBody TbPostDto tbPostDto) {
         return postService.insertPostComment(userId, postId, commentId, tbPostDto.getContent());
+    }
+
+    @Override
+    @JwtAuth
+    public Long insertCommentChildren(Long userId, Long commentId, TbCommentDto tbCommentDto) {
+        return postService.insertCommentChildren(userId, commentId, tbCommentDto.getContent());
+    }
+
+    @Override
+    @JwtAuth
+    public Long insertPostLike(Long userId, Long postId) {
+        postService.insertPostLike(userId, postId);
+        return null;
+    }
+
+    @Override
+    @JwtAuth
+    public Long insertCommentLike(Long userId, Long commentId) {
+        postService.insertCommentLike(userId, commentId);
+        return null;
     }
 
 
