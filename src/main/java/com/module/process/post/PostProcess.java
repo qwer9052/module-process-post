@@ -2,6 +2,7 @@ package com.module.process.post;
 
 import com.module.core.annotation.JwtAuth;
 import com.module.db.post.model.TbCommentDto;
+import com.module.db.post.model.TbPostAllDto;
 import com.module.db.post.model.TbPostDto;
 import com.module.domain.post.rest.PostRest;
 import com.module.process.service.PostService;
@@ -22,8 +23,9 @@ public class PostProcess implements PostRest {
 
     @Override
     @JwtAuth
-    public List<TbPostDto> findAllPost(Long userId) {
-        List<TbPostDto> posts = postService.findAllPost(userId);
+    public List<TbPostAllDto> findAllPostBySearch(Long userId, String search) {
+        System.out.println("search : " + search);
+        List<TbPostAllDto> posts = postService.findAllPostBySearch(userId,search);
         return posts;
     }
 

@@ -6,6 +6,7 @@ import com.module.db.post.entity.TbComment;
 import com.module.db.post.entity.TbPost;
 import com.module.db.post.model.TbCommentChildrenDto;
 import com.module.db.post.model.TbCommentDto;
+import com.module.db.post.model.TbPostAllDto;
 import com.module.db.user.entity.TbUser;
 import com.module.db.post.model.TbPostDto;
 import com.module.domain.post.entityrepo.EPostRepo;
@@ -52,7 +53,6 @@ public class PostService {
         return modelMapper.map(tbPost, TbPostDto.class);
     }
 
-
     public Long insertPost(TbPostDto tbPostDto, Long userId) {
         TbUser tbUser = userRepo.findById(userId);
         TbPost tbPost = TbPost.TbPostBuilder()
@@ -64,11 +64,17 @@ public class PostService {
         return postId;
     }
 
-    public List<TbPostDto> findAllPost(Long userId) {
+    public List<TbPostAllDto> findAllPost(Long userId) {
         TbUser tbUser = userRepo.findById(userId);
         List<TbPost> posts = postRepo.findAllPost();
-        List<TbPostDto> postDtos = posts.stream().map(this::of).collect(Collectors.toList());
+        List<TbPostAllDto> postDtos = posts.stream().map(m -> modelMapper.map(m, TbPostAllDto.class)).collect(Collectors.toList());
         return postDtos;
+    }
+
+    public List<TbPostAllDto> findAllPostBySearch(Long userId, String search){
+        TbUser tbUser = userRepo.findById(userId);
+        Optional<List<TbPostAllDto>> posts = postRepo.findAllPostBySearch(search);
+        return posts.get();
     }
 
     public TbPostDto findOnePostById(Long userId, Long postId) {
@@ -109,16 +115,13 @@ public class PostService {
 
     public TbCommentDto findOneCommentById(Long userId, Long commentId) {
         TbUser tbUser = userRepo.findById(userId);
-        TbCommentDto tbCommentDto = commentRepo.findOneByCommentId(commentId).orElseThrow(() -> new CommonException("존재하지 않는 댓글 입니다."));
-        List<TbCommentChildrenDto> tbCommentChildrenDtos =commentRepo.findCommentChildrenByCommentId(commentId);
+        TbCommentDto tbCommentDto = commentRepo.findOneByCommentId(commentId)
+                .orElseThrow(() -> new CommonException("존재하지 않는 댓글 입니다."));
+        List<TbCommentChildrenDto> tbCommentChildrenDtos = commentRepo.findCommentChildrenByCommentId(commentId);
 
         tbCommentDto.setChildren(tbCommentChildrenDtos.stream()
-                    .filter(children -> children.getParentId().equals(tbCommentDto.getCommentId()))
-                    .collect(Collectors.toList()));
-
-        System.out.println(tbCommentDto.toString());
-        tbCommentChildrenDtos.forEach(System.out::println);
-
+                .filter(children -> children.getParentId().equals(tbCommentDto.getCommentId()))
+                .collect(Collectors.toList()));
         return tbCommentDto;
 
     }
