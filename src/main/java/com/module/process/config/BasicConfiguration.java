@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Configuration;
                 "com.module.core",
                 "com.module.domain",
                 "com.module.db.config",
+                "com.module.cache",
         }
 )
 public class BasicConfiguration {

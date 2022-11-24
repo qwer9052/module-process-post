@@ -1,5 +1,6 @@
 package com.module.process.post;
 
+import com.module.cache.key.CacheKey;
 import com.module.core.annotation.JwtAuth;
 import com.module.db.post.model.TbCommentDto;
 import com.module.db.post.model.TbPostAllDto;
@@ -7,6 +8,7 @@ import com.module.db.post.model.TbPostDto;
 import com.module.domain.post.rest.PostRest;
 import com.module.process.service.PostService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,6 +25,7 @@ public class PostProcess implements PostRest {
 
     @Override
     @JwtAuth
+    @Cacheable(value = CacheKey.USER)
     public List<TbPostAllDto> findAllPostBySearch(Long userId, String search) {
         System.out.println("search : " + search);
         List<TbPostAllDto> posts = postService.findAllPostBySearch(userId,search);

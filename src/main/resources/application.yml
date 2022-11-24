@@ -27,6 +27,10 @@ spring:
       hibernate.enable_lazy_load_no_trans: true
       hibernate.format_sql: true
     generate-ddl: true
+
+  redis:
+    host: 127.0.0.1
+    port: 6379
 ---
 server:
   port: 8080
@@ -54,4 +58,8 @@ spring:
     properties:
       hibernate.enable_lazy_load_no_trans: true
       hibernate.format_sql: true
+
+  redis:
+    host: 127.0.0.1
+    port: 6379
 #---
