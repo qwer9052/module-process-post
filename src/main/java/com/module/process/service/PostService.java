@@ -94,7 +94,7 @@ public class PostService {
 
     }
 
-    public Long insertPostComment(Long userId, Long postId, Long commentId, String content) {
+    public TbPostDto insertPostComment(Long userId, Long postId, Long commentId, String content) {
 
         TbUser tbUser = userRepo.findById(userId);
         TbPost post = postRepo.findPost(postId);
@@ -110,7 +110,7 @@ public class PostService {
             comment.updateParent(tbCommentParent);
         }
 
-        return tbComment.getTbPost().getPostId();
+        return this.findOnePostById(userId, postId);
     }
 
     public TbCommentDto findOneCommentById(Long userId, Long commentId) {

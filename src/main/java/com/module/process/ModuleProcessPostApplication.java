@@ -8,10 +8,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @SpringBootApplication
-@EnableAspectJAutoProxy(proxyTargetClass = true)
-@EnableJpaAuditing
-@EntityScan(basePackages = {"com.module.db"})
-@EnableJpaRepositories(basePackages = {"com.module.domain.*.entityrepo"})
 public class ModuleProcessPostApplication {
 
     public static void main(String[] args) {
@@ -19,3 +15,4 @@ public class ModuleProcessPostApplication {
     }
 
 }
+
