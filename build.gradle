@@ -1,4 +1,5 @@
 project.ext.mainClassName = "com.module.process.ModuleProcessPostApplication"
+
 dependencies {
     api group: 'mysql', name: 'mysql-connector-java', version: '8.0.23'
     // https://mvnrepository.com/artifact/org.hibernate/hibernate-core

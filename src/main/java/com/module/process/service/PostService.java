@@ -2,19 +2,21 @@ package com.module.process.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.module.core.exception.CommonException;
+import com.module.db.common.model.PagingModel;
 import com.module.db.post.entity.TbComment;
 import com.module.db.post.entity.TbPost;
-import com.module.db.post.model.TbCommentChildrenDto;
-import com.module.db.post.model.TbCommentDto;
-import com.module.db.post.model.TbPostAllDto;
+import com.module.db.post.entity.TbPostLike;
+import com.module.db.post.model.*;
 import com.module.db.user.entity.TbUser;
-import com.module.db.post.model.TbPostDto;
 import com.module.domain.post.entityrepo.EPostRepo;
 import com.module.domain.post.repo.CommentRepo;
+import com.module.domain.post.repo.PostLikeRepo;
 import com.module.domain.post.repo.PostRepo;
 import com.module.domain.user.repo.UserRepo;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +35,9 @@ public class PostService {
 
     @Autowired
     PostRepo postRepo;
+
+    @Autowired
+    PostLikeRepo postLikeRepo;
 
     @Autowired
     CommentRepo commentRepo;
@@ -71,26 +76,34 @@ public class PostService {
         return postDtos;
     }
 
-    public List<TbPostAllDto> findAllPostBySearch(Long userId, String search){
-        TbUser tbUser = userRepo.findById(userId);
+    public List<TbPostAllDto> findAllPostBySearch(String search) {
         Optional<List<TbPostAllDto>> posts = postRepo.findAllPostBySearch(search);
         return posts.get();
     }
 
-    public TbPostDto findOnePostById(Long userId, Long postId) {
+    public PagingModel<TbPostAllDto> findPostPagingBySearch(String search, Pageable pageable) {
+        return postRepo.findPostPagingBySearch(search, pageable);
+    }
 
-        TbPostDto postDto = postRepo.findOnePostById(userId, postId).orElseThrow(() -> new CommonException("존재하지 않는 글 입니다."));
+    public TbPostDto findOnePostById(Long userId, Long postId) {
+        System.out.println("postId : " + postId);
+        System.out.println("userId : " + userId);
+
+        TbPostDto postDto = postRepo.findOnePostById(postId).orElseThrow(() -> new CommonException("존재하지 않는 글 입니다."));
+        Long countPostLike = postLikeRepo.countByPostId(postId);
         List<TbCommentDto> commentDtos = commentRepo.findCommentsByPostId(postId);
+
         List<TbCommentChildrenDto> commentChildrenDtos = commentRepo.findCommentChildrenByPostId(postId);
 
-        commentDtos.forEach(parent -> {
-            parent.setChildren(commentChildrenDtos.stream()
-                    .filter(children -> children.getParentId().equals(parent.getCommentId()))
-                    .collect(Collectors.toList()));
-        });
+        commentDtos.forEach(parent -> parent.setChildren(commentChildrenDtos.stream()
+                .filter(children -> children.getParentId().equals(parent.getCommentId()))
+                .collect(Collectors.toList())));
 
         postDto.setComments(commentDtos);
+        postDto.setCountPostLike(countPostLike);
+
         return postDto;
+
 
     }
 
@@ -127,6 +140,7 @@ public class PostService {
     }
 
     public Long insertCommentChildren(Long userId, Long commentId, String content) {
+        System.out.println("2323232323");
         TbUser tbUser = userRepo.findById(userId);
         TbComment comment = commentRepo.findById(commentId);
 
