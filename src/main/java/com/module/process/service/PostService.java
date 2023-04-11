@@ -2,30 +2,22 @@ package com.module.process.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.module.core.exception.CommonException;
+import com.module.db.common.enums.Del;
 import com.module.db.common.model.PagingModel;
-import com.module.db.post.entity.TbComment;
-import com.module.db.post.entity.TbPost;
-import com.module.db.post.entity.TbPostLike;
+import com.module.db.post.entity.*;
 import com.module.db.post.model.*;
 import com.module.db.user.entity.TbUser;
-import com.module.domain.post.entityrepo.EPostRepo;
-import com.module.domain.post.repo.CommentRepo;
-import com.module.domain.post.repo.PostLikeRepo;
-import com.module.domain.post.repo.PostRepo;
+import com.module.domain.post.repo.*;
 import com.module.domain.user.repo.UserRepo;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
-import javax.xml.stream.events.Comment;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -51,11 +43,22 @@ public class PostService {
     @Autowired
     ModelMapper modelMapper;
 
+    @Autowired
+    CommentLikeRepo commentLikeRepo;
+
+    @Autowired
+    PostHistoryRepo postHistoryRepo;
+
+
     @PersistenceContext
     private EntityManager em;
 
     public TbPostDto of(TbPost tbPost) {
         return modelMapper.map(tbPost, TbPostDto.class);
+    }
+
+    public TbPostLikeDto of(TbPostLike tbPostLike) {
+        return modelMapper.map(tbPostLike, TbPostLikeDto.class);
     }
 
     public Long insertPost(TbPostDto tbPostDto, Long userId) {
@@ -86,13 +89,10 @@ public class PostService {
     }
 
     public TbPostDto findOnePostById(Long userId, Long postId) {
-        System.out.println("postId : " + postId);
-        System.out.println("userId : " + userId);
 
         TbPostDto postDto = postRepo.findOnePostById(postId).orElseThrow(() -> new CommonException("존재하지 않는 글 입니다."));
         Long countPostLike = postLikeRepo.countByPostId(postId);
         List<TbCommentDto> commentDtos = commentRepo.findCommentsByPostId(postId);
-
         List<TbCommentChildrenDto> commentChildrenDtos = commentRepo.findCommentChildrenByPostId(postId);
 
         commentDtos.forEach(parent -> parent.setChildren(commentChildrenDtos.stream()
@@ -101,11 +101,13 @@ public class PostService {
 
         postDto.setComments(commentDtos);
         postDto.setCountPostLike(countPostLike);
-
+        if (userId != null) {
+            TbUser tbUser = userRepo.findById(userId);
+            postDto.setLike(postLikeRepo.findBooleanByPostAndUser(tbUser, postId));
+        }
         return postDto;
-
-
     }
+
 
     public TbPostDto insertPostComment(Long userId, Long postId, Long commentId, String content) {
 
@@ -140,7 +142,6 @@ public class PostService {
     }
 
     public Long insertCommentChildren(Long userId, Long commentId, String content) {
-        System.out.println("2323232323");
         TbUser tbUser = userRepo.findById(userId);
         TbComment comment = commentRepo.findById(commentId);
 
@@ -154,13 +155,63 @@ public class PostService {
         return commentId;
     }
 
-    public void insertPostLike(Long userId, Long postId) {
+    public Del insertPostLike(Long userId, Long postId) {
+
+        Del del = Del.N;
         TbUser tbUser = userRepo.findById(userId);
-        TbPost post = postRepo.findPost(postId);
+        TbPost tbPost = postRepo.findPost(postId);
+
+        Optional<TbPostLike> tbPostLike = postLikeRepo.findByPostAndUserAndDel(tbUser, postId);
+
+        if (tbPostLike.isPresent()) {
+            del = Del.valueChange(tbPostLike.get().getDel());
+            tbPostLike.get().setDel(del);
+        } else {
+            tbPostLike = Optional.ofNullable(TbPostLike.TbPostLikeBuilder()
+                    .tbUser(tbUser)
+                    .tbPost(tbPost)
+                    .build());
+            postLikeRepo.insertPostLike(tbPostLike.get());
+        }
+        return del;
+
     }
 
-    public void insertCommentLike(Long userId, Long commentId) {
+    public Del insertCommentLike(Long userId, Long commentId) {
+
+        Del del = Del.N;
         TbUser tbUser = userRepo.findById(userId);
-        TbComment comment = commentRepo.findById(commentId);
+        TbComment tbComment = commentRepo.findById(commentId);
+
+        Optional<TbCommentLike> tbCommentLike = commentLikeRepo.findByCommentAndUserAndDel(tbUser, commentId);
+
+        //Optional<TbPostLike> tbPostLike = postLikeRepo.findByPostAndUserAndDel(tbUser, postId);
+
+        if (tbCommentLike.isPresent()) {
+            System.out.println("commentId : " + 11111);
+            del = Del.valueChange(tbCommentLike.get().getDel());
+            tbCommentLike.get().setDel(del);
+        } else {
+            System.out.println("commentId : " + 22222);
+            tbCommentLike = Optional.ofNullable(TbCommentLike.TbPostLikeBuilder()
+                    .tbUser(tbUser)
+                    .tbComment(tbComment)
+                    .build());
+            commentLikeRepo.insertCommentLike(tbCommentLike.get());
+        }
+        return del;
+    }
+
+    public void insertPostHistory(Long postId) {
+        TbPost tbPost = postRepo.findPost(postId);
+        Optional<TbPostHistory> tbPostHistory = postHistoryRepo.findByTbPost(tbPost);
+
+        tbPostHistory.ifPresentOrElse(
+                TbPostHistory::addCount,
+                () -> postHistoryRepo.insertPostHistory(TbPostHistory.TbPostHistoryBuilder()
+                        .tbPost(tbPost)
+                        .build()));
+
+
     }
 }
