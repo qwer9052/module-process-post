@@ -6,6 +6,7 @@ import com.module.core.annotation.JwtAcceptableAuth;
 import com.module.core.annotation.JwtAuth;
 import com.module.db.common.enums.Del;
 import com.module.db.common.model.PagingModel;
+import com.module.db.post.enums.PostType;
 import com.module.db.post.model.TbCommentDto;
 import com.module.db.post.model.TbPostAllDto;
 import com.module.db.post.model.TbPostDto;
@@ -40,11 +41,22 @@ public class PostProcess implements PostRest {
     }
 
     @Override
+    public PagingModel<TbPostAllDto> findAllPostByPostType(PostType postType, Pageable pageable) {
+        return postService.findAllPostByPostType(postType, pageable);
+    }
+
+
+    @Override
     @JwtAcceptableAuth
     //@Cacheable(keyGenerator = CacheKey.POST_KEY_GENERATOR, value = CacheKey.POST)
     //@CacheParam
     public TbPostDto findOnePostById(Long userId, Long postId) {
-        TbPostDto postDto = postService.findOnePostById(userId, postId);
+        TbPostDto postDto;
+        if (userId == null) {
+            postDto = postService.findOnePostById(userId, postId);
+        } else {
+            postDto = postService.findOnePostByIdAndUser(userId, postId);
+        }
         return postDto;
     }
 
@@ -92,11 +104,10 @@ public class PostProcess implements PostRest {
         log.info("[postHistory] : " + postId);
         Cookie[] cookies = request.getCookies();
 
-
         if (cookies == null || Stream.of(cookies)
-                .noneMatch(cookie -> cookie.getName().equals("postId") && cookie.getValue().equals(String.valueOf(postId)))) {
+                .noneMatch(cookie -> cookie.getName().equals("post_id_" + postId) && cookie.getValue().equals(String.valueOf(postId)))) {
             postService.insertPostHistory(postId);
-            Cookie cookie = new Cookie("postId", String.valueOf(postId));
+            Cookie cookie = new Cookie("post_id_" + postId, String.valueOf(postId));
             cookie.setMaxAge(60 * 60);
             cookie.setSecure(true);
             cookie.setHttpOnly(true);

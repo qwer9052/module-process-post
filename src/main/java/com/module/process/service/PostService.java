@@ -5,10 +5,12 @@ import com.module.core.exception.CommonException;
 import com.module.db.common.enums.Del;
 import com.module.db.common.model.PagingModel;
 import com.module.db.post.entity.*;
+import com.module.db.post.enums.PostType;
 import com.module.db.post.model.*;
 import com.module.db.user.entity.TbUser;
 import com.module.domain.post.repo.*;
 import com.module.domain.user.repo.UserRepo;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +25,7 @@ import java.util.stream.Collectors;
 
 @Transactional
 @Service
+@Slf4j
 public class PostService {
 
     @Autowired
@@ -67,9 +70,20 @@ public class PostService {
                 .title(tbPostDto.getTitle())
                 .content(tbPostDto.getContent())
                 .tbUser(tbUser)
+                .postType(tbPostDto.getPostType())
                 .build();
-        Long postId = postRepo.insertPost(tbPost);
-        return postId;
+        TbPost result = postRepo.insertPost(tbPost);
+
+        TbPostHistory tbPostHistory = TbPostHistory.TbPostHistoryBuilder()
+                .tbPost(result)
+                .build();
+
+        TbPostHistory resultHistory = postHistoryRepo.insertPostHistory(tbPostHistory);
+
+        result.setTbPostHistory(resultHistory);
+        postRepo.insertPost(result);
+
+        return result.getPostId();
     }
 
     public List<TbPostAllDto> findAllPost(Long userId) {
@@ -101,6 +115,24 @@ public class PostService {
 
         postDto.setComments(commentDtos);
         postDto.setCountPostLike(countPostLike);
+        return postDto;
+    }
+
+    public TbPostDto findOnePostByIdAndUser(Long userId, Long postId) {
+
+        TbPostDto postDto = postRepo.findOnePostById(postId).orElseThrow(() -> new CommonException("존재하지 않는 글 입니다."));
+        Long countPostLike = postLikeRepo.countByPostId(postId);
+        Long countHistory = postHistoryRepo.countByPostId(postId);
+        List<TbCommentDto> commentDtos = commentRepo.findCommentsByPostIdAndUserId(postId);
+        List<TbCommentChildrenDto> commentChildrenDtos = commentRepo.findCommentChildrenByPostIdAndUserId(postId);
+
+        commentDtos.forEach(parent -> parent.setChildren(commentChildrenDtos.stream()
+                .filter(children -> children.getParentId().equals(parent.getCommentId()))
+                .collect(Collectors.toList())));
+
+        postDto.setComments(commentDtos);
+        postDto.setCountPostLike(countPostLike);
+        postDto.setCountHistory(countHistory);
         if (userId != null) {
             TbUser tbUser = userRepo.findById(userId);
             postDto.setLike(postLikeRepo.findBooleanByPostAndUser(tbUser, postId));
@@ -161,7 +193,7 @@ public class PostService {
         TbUser tbUser = userRepo.findById(userId);
         TbPost tbPost = postRepo.findPost(postId);
 
-        Optional<TbPostLike> tbPostLike = postLikeRepo.findByPostAndUserAndDel(tbUser, postId);
+        Optional<TbPostLike> tbPostLike = postLikeRepo.findByPostAndUser(tbUser, postId);
 
         if (tbPostLike.isPresent()) {
             del = Del.valueChange(tbPostLike.get().getDel());
@@ -213,5 +245,9 @@ public class PostService {
                         .build()));
 
 
+    }
+
+    public PagingModel<TbPostAllDto> findAllPostByPostType(PostType postType, Pageable pageable) {
+        return postRepo.findAllPostByPostType(postType, pageable);
     }
 }
